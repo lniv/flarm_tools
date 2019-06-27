@@ -5,6 +5,7 @@
  * as of jan 2nd 2016
  * 
  * compiled last May 4th 2018 , using arduino 1.6.8 board = node mcu 1.0 (ESP-12E)
+ * complies on 1.8.7 June 2019
  * flow to flarm is good, pretty much confirming we're on port 2 of the flarm (since 1 was configured as 19200, while 2 was set to 57600 baud)
  */
 
