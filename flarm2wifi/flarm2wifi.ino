@@ -26,7 +26,7 @@ const char *password = "11111111";
 
 // flight computer
 const char* host = "10.10.10.2"; // cellphone was 2, kobo 4,3
-const int port = 4353; // flarm on 4352, vario on 4353
+const int port = 4352; // flarm on 4352, vario on 4353
 
 #ifdef PROTOCOL_TCP
 #include <WiFiClient.h>
