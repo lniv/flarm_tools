@@ -4,13 +4,14 @@
  * meant to run on an esp8266, obviously
  * as of jan 2nd 2016
  * 
- * compiled last May 4th 2018 , using arduino 1.6.8 board = node mcu 1.0 (ESP-12E)
- * complies on 1.8.7 June 2019
- * flow to flarm is good, pretty much confirming we're on port 2 of the flarm (since 1 was configured as 19200, while 2 was set to 57600 baud)
+ * last compiled last May 19th 2021 , using arduino 1.8.13 board = node mcu 1.0 (ESP-12E)
+ * minimal edition, tx only from a cambridge 302
  */
 
 #define PROTOCOL_TCP
 //#define PROTOCOL_UDP
+
+#define C302
 
 #include <ESP8266WiFi.h> 
 
@@ -59,7 +60,7 @@ uint8_t wifi2serialBuffer [8192];
 
 void setup() {
 	delay(1000);
-	Serial.begin(57600); // match flarm setup ; seems we're connected on port 2
+	Serial.begin(4800); // match 302 setup
 	/* You can remove the password parameter if you want the AP to be open. */
 
 	Serial.print("compiled on ");
@@ -135,12 +136,20 @@ void loop() {
 // 20180505 - seems to work exactly like the older version; i.e. i still can't declare tasks or download flights. something is clearly wrong.
 // TODO : try running on a laptop (at least easier to add error messages) ; maybe not adding a null terminator is a problem? seems we're getting the request, but our response is incorrect?
 	if(Serial.available()) {
-
+        // send the last packet, just after we got an indication of a byte - the buffer should handle it, otherwise we lose data from the previous packet being sent!
+        if (j > 0) {
+            send_packet(packetBuffer, j);
+            j = 0;
+        }
 		// read the data until pause:
 		// note that if we have a babbling idiot, we'll never send - but that might be the preferred method in any case.
 		while(1) {
 			if(Serial.available()) {
 				packetBuffer[j] = (char)Serial.read(); // read char from UART
+                if (packetBuffer[j-1] == '\n') {
+                    j++;
+                    break;
+                }
 				if(j < ARRLEN(packetBuffer) - 1) {
 					j++;
 				}
@@ -152,40 +161,6 @@ void loop() {
 			}
 		}
 		
-		// now send to WiFi:
-		send_packet(packetBuffer, j);
-		j = 0;
+		
 	}
-
-	//handle incoming data
-	
-#ifdef PROTOCOL_TCP
-
-  // here we have a connected client
-
-  if(client.available()) {
-    while(client.available()) {
-      wifi2serialBuffer[packetSize] = client.read();
-	  // pretty odd - so just overwrite the last byte if we're too large?
-      if(packetSize < ARRLEN(wifi2serialBuffer) - 1){
-		  packetSize++;
-	  }
-    }
-    // now send to UART:
-    Serial.write(wifi2serialBuffer, packetSize);
-    packetSize = 0;
-  }
-#endif
-
-#ifdef PROTOCOL_UDP
-    packetSize = udp.parsePacket();
-	if (packetSize) {
-		//Serial.print("got N= ");
-		//Serial.println(packetSize);
-		remoteIp = udp.remoteIP(); // store the ip of the remote device
-		udp.read(wifi2serialBuffer, ARRLEN(wifi2serialBuffer));
-		// now send to UART:
-		Serial.write(wifi2serialBuffer, packetSize);
-	}
-#endif
 }
